@@ -71,7 +71,22 @@ CREATE INDEX IF NOT EXISTS chunks_content_hash_idx ON chunks (content_hash);
 def init_schema(pool: ConnectionPool, dim: int) -> None:
     with pool.connection() as conn:
         conn.execute(SCHEMA_SQL.format(dim=dim))
+        existing = _embedding_dim(conn, "chunks")
+        if existing is not None and existing != dim:
+            # сменилась размерность векторов (другая модель эмбеддингов) — пересоздаём
+            conn.execute("DROP TABLE chunks")
+            conn.execute("DROP TABLE embed_cache")
+            conn.execute(SCHEMA_SQL.format(dim=dim))
         conn.execute(INDEX_SQL)
+
+
+def _embedding_dim(conn, table: str) -> int | None:
+    row = conn.execute(
+        "SELECT atttypmod FROM pg_attribute "
+        "WHERE attrelid = %s::regclass AND attname = 'embedding' AND NOT attisdropped",
+        (table,),
+    ).fetchone()
+    return row[0] if row else None
 
 
 def content_hash(text: str) -> str:
