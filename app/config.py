@@ -29,7 +29,12 @@ class Settings:
 
     # LLM-провайдеры: glm | openrouter | auto (glm с откатом на openrouter)
     chat_provider: str = field(default_factory=lambda: _env("CHAT_PROVIDER", "auto"))
-    embeddings_provider: str = field(default_factory=lambda: _env("EMBEDDINGS_PROVIDER", "auto"))
+    # Эмбеддинги: local (GPU, sentence-transformers) | glm | openrouter | auto
+    embeddings_provider: str = field(default_factory=lambda: _env("EMBEDDINGS_PROVIDER", "local"))
+
+    # Локальный эмбеддер (bge-m3 на GPU, векторы 1024 измерения)
+    local_embedding_model: str = field(default_factory=lambda: _env("LOCAL_EMBEDDING_MODEL", "BAAI/bge-m3"))
+    local_embedding_device: str = field(default_factory=lambda: _env("LOCAL_EMBEDDING_DEVICE", "cuda"))
 
     # GLM (основной)
     glm_api_key: str = field(default_factory=lambda: _env("GLM_API_KEY"))
@@ -47,7 +52,7 @@ class Settings:
         default_factory=lambda: _env("OPENROUTER_EMBEDDING_MODEL", "openai/text-embedding-3-small")
     )
 
-    embedding_dim: int = field(default_factory=lambda: int(_env("EMBEDDING_DIM", "1536")))
+    embedding_dim: int = field(default_factory=lambda: int(_env("EMBEDDING_DIM", "1024")))
 
 
 def load_env_file(path: str = ".env") -> None:

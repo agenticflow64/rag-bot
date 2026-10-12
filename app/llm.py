@@ -1,7 +1,8 @@
 """LLM-провайдеры: GLM (основной) и OpenRouter (резерв), OpenAI-совместимый протокол.
 
-Провайдер выбирается один раз на процесс: auto → пробуем GLM, при ошибке
-(нет модели / нет баланса / сети) откатываемся на OpenRouter.
+Генерация — через API с авто-fallback. Эмбеддинги — либо там же через API,
+либо локально на GPU (bge-m3 через sentence-transformers), зависит от
+EMBEDDINGS_PROVIDER. Провайдер API выбирается один раз на процесс.
 """
 
 from __future__ import annotations
@@ -51,6 +52,7 @@ class LLMService:
 
     def __init__(self, settings: Settings):
         self.s = settings
+        self._local_embedder = None  # LocalEmbedder, создаётся лениво при local-провайдере
         self._glm = _Provider(
             settings.glm_base_url, settings.glm_api_key,
             settings.glm_chat_model, settings.glm_embedding_model,
@@ -86,6 +88,8 @@ class LLMService:
         return self._chat_provider
 
     def embed_endpoint(self) -> _Provider:
+        if self.s.embeddings_provider == "local":
+            raise LLMError("эмбеддинги локальные — API-endpoint не используется")
         if self._embed_provider is not None:
             return self._embed_provider
         if self.s.embeddings_provider == "openrouter":
@@ -133,6 +137,15 @@ class LLMService:
     # ---------- эмбеддинги ----------
 
     def embed(self, texts: list[str]) -> list[list[float]]:
+        if self.s.embeddings_provider == "auto" and not (self._glm.available() or self._or.available()):
+            # ключей API нет — эмбеддим локально на GPU
+            self.s.embeddings_provider = "local"
+        if self.s.embeddings_provider == "local":
+            if self._local_embedder is None:
+                from app.embeddings import get_local_embedder
+
+                self._local_embedder = get_local_embedder(self.s)
+            return self._local_embedder.embed(texts)
         try:
             return self._embed_with(self.embed_endpoint(), texts)
         except LLMError:
@@ -161,6 +174,8 @@ class LLMService:
         return out
 
     def embedding_model_name(self) -> str:
+        if self.s.embeddings_provider == "local":
+            return f"{self.s.local_embedding_model} (local)"
         return self.embed_endpoint().embedding_model
 
     # ---------- генерация ----------
