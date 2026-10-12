@@ -66,8 +66,14 @@ def split_markdown(text: str) -> list[tuple[list[str], str]]:
     return result
 
 
-def _split_long(text: str, target_tokens: int, max_tokens: int, overlap_tokens: int) -> list[str]:
-    """Длинную секцию режет на окна по абзацам с перекрытием."""
+def _split_long(
+    text: str, target_tokens: int, max_tokens: int, overlap_tokens: int, context: str = ""
+) -> list[str]:
+    """Длинную секцию режет на окна по абзацам с перекрытием.
+
+    `context` — строка заголовка секции: добавляется в начало каждого окна,
+    кроме первого (там заголовок уже есть), чтобы окно не теряло тему.
+    """
     if estimate_tokens(text) <= max_tokens:
         return [text]
 
@@ -104,6 +110,9 @@ def _split_long(text: str, target_tokens: int, max_tokens: int, overlap_tokens: 
             final.append(w[:char_target])
             w = w[char_target - char_overlap :]
         final.append(w)
+
+    if context:
+        final = [final[0]] + [f"{context}\n\n{w}" for w in final[1:]]
     return final
 
 
@@ -129,7 +138,8 @@ def chunk_markdown(
         if path and path[0] == doc_title:  # H1 совпадает с заголовком документа — не дублируем
             path = path[1:]
         section_label = " > ".join(path) if path else doc_title
-        for piece in _split_long(sec_text, target_tokens, max_tokens, overlap_tokens):
+        ctx = section_label if section_label != doc_title else doc_title
+        for piece in _split_long(sec_text, target_tokens, max_tokens, overlap_tokens, context=ctx):
             piece = piece.strip()
             if not piece or estimate_tokens(piece) < 15:
                 continue
