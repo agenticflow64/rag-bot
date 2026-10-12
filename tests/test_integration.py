@@ -1,6 +1,7 @@
 """Интеграционные тесты: ингест мини-корпуса → retrieval → конвейер ответа.
 
-Требует поднятый docker compose (postgres) и API-ключи в .env.
+Требует поднятый docker compose (postgres) и ключ генерации в .env
+(эмбеддинги локальные, GPU не обязателен — bge-m3 умеет и на CPU).
 Запуск: pytest -m integration
 """
 
@@ -21,11 +22,11 @@ pytestmark = pytest.mark.integration
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 QUESTIONS = [
-    ("Как откалибровать гаджет?", "gadgets.md"),
-    ("Сколько гаджетов может зарегистрировать один владелец?", "gadgets.md"),
-    ("Какой префикс должен быть у идентификатора гаджета?", "gadgets.md"),
-    ("С каким интервалом телеметрия сбрасывается на диск?", "telemetry.md"),
-    ("Сколько раз пайплайн повторяет запись при ошибке?", "telemetry.md"),
+    ("Сколько стоит доставка по Москве в пределах МКАД?", "dostavka-mini.md"),
+    ("Со скольки рублей доставка по Москве бесплатная?", "dostavka-mini.md"),
+    ("Сколько дней заказ хранится в пункте выдачи?", "dostavka-mini.md"),
+    ("В течение какого срока можно вернуть товар надлежащего качества?", "vozvrat-mini.md"),
+    ("Вернут ли деньги, если упаковка выброшена?", "vozvrat-mini.md"),
 ]
 
 
@@ -52,7 +53,7 @@ def test_retrieval_finds_expected_source(retriever, question, expected_file):
 
 
 def test_relevant_question_is_not_refusal(retriever):
-    assert retriever.is_relevant(retriever.search("Как откалибровать гаджет?")[0])
+    assert retriever.is_relevant(retriever.search("Сколько стоит доставка по Москве?")[0])
 
 
 def test_out_of_base_refuses(retriever):
@@ -63,8 +64,8 @@ def test_out_of_base_refuses(retriever):
 def test_full_pipeline_answers_with_source(test_db, ingested):
     llm = LLMService(test_db)
     r = Retriever(db.get_pool(test_db), llm, top_k=5, threshold=0.30)
-    result = RAGPipeline(r, llm).ask("Какой допустимый уровень калибровки гаджета?")
+    result = RAGPipeline(r, llm).ask("Сколько дней хранится заказ в пункте выдачи?")
     assert not result.refused
-    assert "9" in result.answer or "1" in result.answer
-    assert any(s.source_file == "gadgets.md" for s in result.sources)
+    assert "7" in result.answer or "14" in result.answer
+    assert any(s.source_file == "dostavka-mini.md" for s in result.sources)
     assert result.total_latency > 0
