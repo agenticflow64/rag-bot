@@ -49,23 +49,24 @@ class Settings:
 
     embedding_dim: int = field(default_factory=lambda: int(_env("EMBEDDING_DIM", "1536")))
 
-    def load_env_file(self, path: str = ".env") -> None:
-        """Мини-загрузчик .env (без внешних зависимостей). Вызывается до чтения полей."""
-        if not os.path.exists(path):
-            return
-        with open(path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, _, value = line.partition("=")
-                key, value = key.strip(), value.strip().strip("'\"")
-                os.environ.setdefault(key, value)
+
+def load_env_file(path: str = ".env") -> None:
+    """Мини-загрузчик .env (без внешних зависимостей). Вызывать ДО создания Settings."""
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key, value = key.strip(), value.strip().strip("'\"")
+            os.environ.setdefault(key, value)
 
 
 def get_settings() -> Settings:
-    s = Settings()
-    return s
+    load_env_file()
+    return Settings()
 
 
 def estimate_tokens(text: str) -> int:

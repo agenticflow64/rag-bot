@@ -27,8 +27,9 @@ _settings: Settings | None = None
 def get_settings() -> Settings:
     global _settings
     if _settings is None:
-        _settings = Settings()
-        _settings.load_env_file()
+        from app.config import get_settings as load_settings
+
+        _settings = load_settings()
     return _settings
 
 

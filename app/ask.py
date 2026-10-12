@@ -8,7 +8,7 @@ from __future__ import annotations
 import sys
 
 from app import db
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.llm import LLMService
 from app.pipeline import RAGPipeline
 from app.retrieval import Retriever
@@ -33,9 +33,9 @@ def main() -> int:
         i = sys.argv.index("--top-k")
         top_k = int(sys.argv[i + 1])
 
-    settings = Settings()
-    settings.load_env_file()
+    settings = get_settings()
     result = build_pipeline(settings).ask(args[0], top_k=top_k)
+    db.get_pool(settings).close()
 
     print(result.answer)
     print()

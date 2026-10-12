@@ -13,7 +13,7 @@ from pathlib import Path
 
 from app import db
 from app.chunking import chunk_markdown
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.download_docs import parse_links
 from app.llm import LLMService
 
@@ -127,9 +127,9 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
     args = parser.parse_args()
 
-    settings = Settings()
-    settings.load_env_file()
+    settings = get_settings()
     stats = ingest(settings, args.data_dir)
+    db.get_pool(settings).close()
     print(json.dumps(stats, ensure_ascii=False))
 
 
