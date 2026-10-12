@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(docker compose *)",
+      "Bash(python *)",
+      "Bash(python3 *)"
+    ],
+    "deny": [
+      "Read(.env/**)",
+      "Bash(sudo *)",
+      "Bash(rm -rf *)"
+    ]
+  }
+}
