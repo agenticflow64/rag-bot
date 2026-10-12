@@ -19,8 +19,8 @@ class Settings:
 
     # Retrieval
     top_k: int = field(default_factory=lambda: int(_env("TOP_K", "5")))
-    # Порог косинусной близости: ниже — «нет ответа в базе»
-    relevance_threshold: float = field(default_factory=lambda: float(_env("RELEVANCE_THRESHOLD", "0.30")))
+    # Порог косинусной близости (bge-m3): ниже — «нет ответа в базе»
+    relevance_threshold: float = field(default_factory=lambda: float(_env("RELEVANCE_THRESHOLD", "0.45")))
 
     # Чанкинг: целевой размер в «токенах» (оценка: 1 токен ≈ 4 символа)
     chunk_target_tokens: int = field(default_factory=lambda: int(_env("CHUNK_TARGET_TOKENS", "600")))

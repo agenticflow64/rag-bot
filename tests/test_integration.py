@@ -40,7 +40,7 @@ def ingested(test_db):
 @pytest.fixture
 def retriever(test_db, ingested):
     llm = LLMService(test_db)
-    return Retriever(db.get_pool(test_db), llm, top_k=5, threshold=0.30)
+    return Retriever(db.get_pool(test_db), llm, top_k=5, threshold=0.45)
 
 
 @pytest.mark.parametrize("question,expected_file", QUESTIONS)
@@ -63,7 +63,7 @@ def test_out_of_base_refuses(retriever):
 
 def test_full_pipeline_answers_with_source(test_db, ingested):
     llm = LLMService(test_db)
-    r = Retriever(db.get_pool(test_db), llm, top_k=5, threshold=0.30)
+    r = Retriever(db.get_pool(test_db), llm, top_k=5, threshold=0.45)
     result = RAGPipeline(r, llm).ask("Сколько дней хранится заказ в пункте выдачи?")
     assert not result.refused
     assert "7" in result.answer or "14" in result.answer
