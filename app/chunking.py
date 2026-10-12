@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from app.config import estimate_tokens
 
 _HEADING_RE = re.compile(r"^(#{1,4})\s+(.*)$")
-# FastAPI docs добавляют к заголовкам явные якоря: "## Title { #anchor }"
+# некоторые генераторы доков добавляют к заголовкам явные якоря: "## Title { #anchor }"
 _ANCHOR_RE = re.compile(r"\s*\{\s*#[^}]*\}\s*$")
 
 
