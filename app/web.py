@@ -1,15 +1,17 @@
 """Веб-интерфейс: FastAPI + одна статическая страница, SSE-стриминг ответа.
 
-Запуск: python -m app.web (uvicorn) → http://localhost:8000
+Запуск: python -m app.web (uvicorn) → http://localhost:8800
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import re
+from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.ask import build_pipeline
@@ -19,9 +21,12 @@ from app.pipeline import REFUSAL_ANSWER
 
 log = logging.getLogger("rag.web")
 
-app = FastAPI(title="RAG-бот по базе знаний")
+app = FastAPI(title="Ассистент поддержки по базе знаний")
 
 _settings: Settings | None = None
+
+KB_DIR = Path(__file__).resolve().parent.parent / "data" / "kb"
+_KB_FILE_RE = re.compile(r"^[a-z0-9-]+\.md$")
 
 
 def get_settings() -> Settings:
@@ -40,9 +45,18 @@ class AskBody(BaseModel):
 
 @app.get("/")
 def index() -> FileResponse:
-    from pathlib import Path
-
     return FileResponse(Path(__file__).parent / "static" / "index.html")
+
+
+@app.get("/kb/{name}", response_class=PlainTextResponse)
+def kb_doc(name: str) -> PlainTextResponse:
+    """Выдача документа базы знаний: на него ведут ссылки из источников ответа."""
+    if not _KB_FILE_RE.match(name):
+        raise HTTPException(status_code=404, detail="нет такого документа")
+    path = KB_DIR / name
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="нет такого документа")
+    return PlainTextResponse(path.read_text(encoding="utf-8"), media_type="text/markdown; charset=utf-8")
 
 
 def _sse(event: str, data: dict) -> str:

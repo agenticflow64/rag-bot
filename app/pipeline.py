@@ -12,7 +12,7 @@ from app.retrieval import RetrievedChunk, Retriever
 
 log = logging.getLogger("rag.pipeline")
 
-REFUSAL_ANSWER = "Вне базы знаний — ответа в документации нет."
+REFUSAL_ANSWER = "Вне базы знаний — ответа в базе нет."
 
 
 @dataclass
