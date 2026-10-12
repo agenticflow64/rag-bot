@@ -1,6 +1,6 @@
-"""Ингест документации: markdown → чанки → эмбеддинги (с кэшем) → pgvector.
+"""Ингест базы знаний: markdown → чанки → эмбеддинги (с кэшем) → pgvector.
 
-Запуск: python -m app.ingest [--data-dir data/docs]
+Запуск: python -m app.ingest [--data-dir data/kb]
 """
 
 from __future__ import annotations
@@ -14,25 +14,18 @@ from pathlib import Path
 from app import db
 from app.chunking import chunk_markdown
 from app.config import Settings, get_settings
-from app.download_docs import parse_links
 from app.llm import LLMService
 
 log = logging.getLogger("rag.ingest")
 
-DEFAULT_DATA_DIR = Path("data/docs")
+DEFAULT_DATA_DIR = Path("data/kb")
 
 
 def load_corpus(data_dir: Path) -> list[tuple[str, str, str]]:
-    """[(source_file, doc_url, text)] — url берём из links.txt по имени файла."""
-    url_by_name = {}
-    links_path = data_dir.parent / "links.txt"
-    if links_path.exists():
-        for _raw, doc_url, name in parse_links(links_path):
-            url_by_name[name] = doc_url
+    """[(source_file, doc_url, text)] — url ведёт на выдачу документа из веб-интерфейса."""
     corpus = []
     for md in sorted(data_dir.glob("*.md")):
-        url = url_by_name.get(md.name, "")
-        corpus.append((md.name, url, md.read_text(encoding="utf-8")))
+        corpus.append((md.name, f"/kb/{md.name}", md.read_text(encoding="utf-8")))
     return corpus
 
 
@@ -41,7 +34,7 @@ def ingest(settings: Settings, data_dir: Path = DEFAULT_DATA_DIR) -> dict:
     t0 = time.perf_counter()
     corpus = load_corpus(data_dir)
     if not corpus:
-        raise SystemExit(f"в {data_dir} нет .md файлов — сначала python -m app.download_docs")
+        raise SystemExit(f"в {data_dir} нет .md файлов")
 
     llm = LLMService(settings)
     model = llm.embedding_model_name()
@@ -123,7 +116,7 @@ def _pgvec(vec: list[float] | None) -> str | None:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    parser = argparse.ArgumentParser(description="Ингест документации в pgvector")
+    parser = argparse.ArgumentParser(description="Ингест базы знаний в pgvector")
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
     args = parser.parse_args()
 
