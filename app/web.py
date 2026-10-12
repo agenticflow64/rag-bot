@@ -40,7 +40,9 @@ class AskBody(BaseModel):
 
 @app.get("/")
 def index() -> FileResponse:
-    return FileResponse(__file__.parent / "static" / "index.html")
+    from pathlib import Path
+
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 def _sse(event: str, data: dict) -> str:
@@ -94,11 +96,13 @@ def ask(body: AskBody) -> StreamingResponse:
 
 
 def main() -> None:
+    import os
+
     import uvicorn
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     get_settings()  # прогрев конфига
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    uvicorn.run(app, host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", "8800")), log_level="info")
 
 
 if __name__ == "__main__":
