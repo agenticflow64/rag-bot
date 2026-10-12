@@ -5,7 +5,7 @@
 ## Цель проекта
 
 RAG-бот по базе знаний: отвечает на вопросы по открытой документации
-(PostgreSQL, Spring Security docs) со ссылками на источники.
+(официальные доки FastAPI, markdown) со ссылками на источники.
 Пет-проект для портфолио, делается по вечерам.
 
 ## Позиционирование кейса
@@ -17,19 +17,23 @@ RAG-бот по базе знаний: отвечает на вопросы по
 
 ## Стек
 
-- Python 3.12
+- Python 3.12+
 - PostgreSQL 17 + pgvector (Docker, образ `pgvector/pgvector:pg17`)
-- GLM API (OpenAI-совместимый; base URL `https://open.bigmodel.cn/api/paas/v4`)
-- Эмбеддинги: GLM API или локально BGE-M3 (GPU RTX 5060 Ti),
-  переключение через `EMBEDDINGS_PROVIDER=glm|local`
+- LLM и эмбеддинги: OpenAI-совместимые API — GLM (основной)
+  и OpenRouter (резерв), автоматический fallback при недоступности
 
 ## Структура репо
 
 ```
 README.md            — кейс: Задача → Решение → Результат
 CLAUDE.md            — этот файл
-docker-compose.yml   — postgres + pgvector (сервис app будет добавлен)
+docker-compose.yml   — postgres + pgvector
 .env.example         — шаблон переменных окружения (без ключей)
+app/                 — конвейер (chunking, ingest, retrieval, llm, web, ask)
+app/static/          — веб-страница интерфейса
+scripts/eval_run.py  — прогон замеров качества
+tests/               — юнит + интеграционные тесты
+data/links.txt       — список источников документации
 docs/architecture.md — mermaid-схема конвейера
 docs/demo-script.md  — сценарий демо-видео (до 2 минут)
 docs/plan.md         — план работ по вечерам
