@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG-бот по документации requests</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-soft: #131c33;
+    --panel: #16213e;
+    --panel-2: #1a2749;
+    --border: #24304f;
+    --text: #e2e8f0;
+    --muted: #8b98b4;
+    --cyan: #22d3ee;
+    --violet: #8b5cf6;
+    --grad: linear-gradient(135deg, #22d3ee, #8b5cf6);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(139, 92, 246, .16), transparent 60%),
+      radial-gradient(700px 380px at 0% 0%, rgba(34, 211, 238, .10), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 15.5px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(15, 23, 42, .7);
+    backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--grad);
+    display: grid; place-items: center;
+    font-weight: 800; color: #0b1120; font-size: 15px;
+    box-shadow: 0 4px 24px rgba(34, 211, 238, .35);
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: .1px; }
+  header .sub { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px #34d39988; }
+
+  main {
+    flex: 1; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 22px;
+    padding: 30px 20px 130px;
+    width: 100%; max-width: 860px; margin: 0 auto;
+  }
+
+  .hero { text-align: center; margin: auto 0 10px; }
+  .hero h2 {
+    font-size: 26px; margin: 0 0 10px;
+    background: var(--grad);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .hero p { color: var(--muted); margin: 0 0 26px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .chip {
+    border: 1px solid var(--border); background: var(--panel);
+    color: var(--text); border-radius: 999px; padding: 8px 16px;
+    font-size: 13.5px; cursor: pointer; transition: .18s;
+  }
+  .chip:hover { border-color: var(--cyan); transform: translateY(-1px); }
+
+  .msg { display: flex; gap: 12px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble {
+    background: linear-gradient(135deg, rgba(34,211,238,.16), rgba(139,92,246,.20));
+    border: 1px solid rgba(139, 92, 246, .35);
+    border-radius: var(--radius) var(--radius) 4px var(--radius);
+    max-width: 78%;
+  }
+  .avatar {
+    flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px;
+    background: var(--grad); display: grid; place-items: center;
+    color: #0b1120; font-weight: 800; font-size: 13px;
+  }
+  .bubble {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 4px var(--radius) var(--radius) var(--radius);
+    padding: 13px 17px; line-height: 1.62; min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .bubble code {
+    background: rgba(34, 211, 238, .10); border: 1px solid rgba(34,211,238,.18);
+    padding: 1px 6px; border-radius: 6px; font-size: 13px;
+    font-family: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+    color: #a5f3fc;
+  }
+  .cite {
+    display: inline-grid; place-items: center;
+    min-width: 20px; height: 20px; padding: 0 5px; margin: 0 2px;
+    border-radius: 6px; font-size: 11.5px; font-weight: 700; vertical-align: 1px;
+    background: rgba(34, 211, 238, .14); color: var(--cyan);
+    border: 1px solid rgba(34, 211, 238, .3);
+    cursor: pointer; text-decoration: none;
+  }
+  .cursor {
+    display: inline-block; width: 8px; height: 16px; margin-left: 2px;
+    background: var(--cyan); vertical-align: -2px;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .sources { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .src-label {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin: 4px 0 0;
+  }
+  .src {
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--bg-soft); padding: 10px 14px;
+  }
+  .src.cited { border-color: rgba(34, 211, 238, .45); background: rgba(34, 211, 238, .05); }
+  .src-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .src .n {
+    background: var(--grad); color: #0b1120; font-weight: 800; font-size: 11px;
+    border-radius: 6px; padding: 2px 7px;
+  }
+  .src .file { font-weight: 600; font-size: 13.5px; }
+  .src .section { color: var(--muted); font-size: 12.5px; }
+  .src .score { margin-left: auto; color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .src blockquote {
+    margin: 8px 0 0; padding: 2px 0 2px 12px;
+    border-left: 3px solid rgba(139, 92, 246, .55);
+    color: var(--muted); font-size: 12.8px; line-height: 1.55;
+    white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .src a { color: var(--cyan); text-decoration: none; font-size: 12.5px; }
+  .src a:hover { text-decoration: underline; }
+
+  .refusal {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px dashed rgba(139, 92, 246, .5);
+    background: rgba(139, 92, 246, .07);
+    border-radius: var(--radius); padding: 15px 18px;
+  }
+  .refusal .icon {
+    width: 36px; height: 36px; border-radius: 10px; flex: 0 0 36px;
+    background: rgba(139, 92, 246, .18); display: grid; place-items: center;
+    color: #c4b5fd; font-size: 17px;
+  }
+  .refusal b { display: block; font-size: 14.5px; }
+  .refusal span { color: var(--muted); font-size: 12.8px; }
+
+  .meta { color: var(--muted); font-size: 11.5px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+
+  footer-input {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 16px 20px 22px;
+    background: linear-gradient(transparent, var(--bg) 45%);
+  }
+  .input-wrap {
+    max-width: 860px; margin: 0 auto; display: flex; gap: 10px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 8px 8px 8px 18px; align-items: center;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input-wrap:focus-within {
+    border-color: rgba(34, 211, 238, .6);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, .08), 0 8px 40px rgba(34, 211, 238, .10);
+  }
+  .input-wrap input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-size: 15px; padding: 10px 0;
+  }
+  .input-wrap input::placeholder { color: #5b6884; }
+  .send {
+    border: none; border-radius: 12px; padding: 11px 20px;
+    background: var(--grad); color: #0b1120; font-weight: 700; font-size: 14px;
+    cursor: pointer; transition: .18s; white-space: nowrap;
+  }
+  .send:hover { filter: brightness(1.12); transform: translateY(-1px); }
+  .send:disabled { opacity: .45; cursor: default; transform: none; }
+
+  .status {
+    max-width: 860px; margin: 8px auto 0; text-align: center;
+    color: var(--muted); font-size: 12px; min-height: 18px;
+  }
+  .skel { color: var(--muted); }
+  .spinner {
+    display: inline-block; width: 13px; height: 13px; border-radius: 50%;
+    border: 2px solid rgba(34,211,238,.25); border-top-color: var(--cyan);
+    animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    main { padding: 20px 14px 150px; }
+    .msg.user .bubble { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RB</div>
+  <div>
+    <h1>RAG-бот по документации FastAPI</h1>
+    <div class="sub"><span class="dot"></span>PostgreSQL 17 + pgvector · эмбеддинги и генерация через API · ответы со ссылками на источники</div>
+  </div>
+</header>
+
+<main id="chat">
+  <div class="hero" id="hero">
+    <h2>Спросите — отвечу по базе знаний</h2>
+    <p>Бот отвечает только по официальной документации и цитирует источники. Если ответа в базе нет — честно скажет об этом.</p>
+    <div class="chips">
+      <button class="chip">Как объявить параметры пути и query-параметры?</button>
+      <button class="chip">Как работает валидация тела запроса через Pydantic?</button>
+      <button class="chip">Как настроить аутентификацию по JWT?</button>
+      <button class="chip">Зачем нужны фоновые задачи?</button>
+    </div>
+  </div>
+</main>
+
+<footer-input>
+  <div class="input-wrap">
+    <input id="q" type="text" placeholder="Вопрос по документации FastAPI…" autocomplete="off" autofocus>
+    <button class="send" id="send">Спросить</button>
+  </div>
+  <div class="status" id="status"></div>
+</footer-input>
+
+<script>
+const chat = document.getElementById('chat');
+const hero = document.getElementById('hero');
+const input = document.getElementById('q');
+const sendBtn = document.getElementById('send');
+const statusEl = document.getElementById('status');
+let busy = false;
+
+const EXAMPLES = {};
+
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// мини-разметка: **жирный**, `код`, [n] → чип цитаты
+function renderAnswer(text) {
+  let h = esc(text);
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+  h = h.replace(/\[(\d+)\]/g, (m, n) => `<a class="cite" href="#src-${m}">${n}</a>`);
+  return h;
+}
+
+function addQuestion(text) {
+  const msg = el('div', 'msg user');
+  msg.appendChild(el('div', 'bubble', esc(text)));
+  chat.appendChild(msg);
+}
+
+function addAnswerShell() {
+  const msg = el('div', 'msg bot');
+  msg.appendChild(el('div', 'avatar', 'RB'));
+  const bubble = el('div', 'bubble');
+  const body = el('div');
+  body.innerHTML = '<span class="cursor"></span>';
+  bubble.appendChild(body);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  scrollDown();
+  return { msg, bubble, body };
+}
+
+function scrollDown() { chat.scrollTop = chat.scrollHeight; }
+
+function renderSources(container, sources, citedSet) {
+  if (!sources.length) return;
+  container.appendChild(el('div', 'src-label', 'Источники'));
+  const wrap = el('div', 'sources');
+  for (const s of sources) {
+    const card = el('div', 'src' + (citedSet.has(s.n) ? ' cited' : ''));
+    card.id = `src-[${s.n}]`;
+    const head = el('div', 'src-head');
+    head.appendChild(el('span', 'n', s.n));
+    head.appendChild(el('span', 'file', esc(s.file)));
+    head.appendChild(el('span', 'section', esc(s.section)));
+    head.appendChild(el('span', 'score', 'score ' + s.score.toFixed(2)));
+    card.appendChild(head);
+    const q = el('blockquote', '', esc(s.quote));
+    card.appendChild(q);
+    if (s.url) {
+      const linkRow = el('div');
+      linkRow.style.marginTop = '8px';
+      linkRow.innerHTML = `<a href="${esc(s.url)}" target="_blank" rel="noopener">открыть раздел в документации ↗</a>`;
+      card.appendChild(linkRow);
+    }
+    wrap.appendChild(card);
+  }
+  container.appendChild(wrap);
+}
+
+async function ask(question) {
+  if (busy || !question.trim()) return;
+  busy = true; sendBtn.disabled = true;
+  hero.remove?.();
+
+  addQuestion(question);
+  const { bubble, body } = addAnswerShell();
+  statusEl.innerHTML = '<span class="spinner"></span>поиск по базе знаний…';
+
+  let answerText = '';
+  let sources = [];
+
+  try {
+    const resp = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let refused = false;
+    let cited = [];
+    let retrievalLatency = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const raw = buf.slice(0, idx); buf = buf.slice(idx + 2);
+        const evm = /^event: (.+)$/m.exec(raw);
+        const dm = /^data: (.+)$/m.exec(raw);
+        if (!evm || !dm) continue;
+        const ev = evm[1], data = JSON.parse(dm[1]);
+
+        if (ev === 'sources') {
+          sources = data.sources;
+          retrievalLatency = data.retrieval_latency;
+          statusEl.innerHTML = '<span class="spinner"></span>генерация ответа…';
+        } else if (ev === 'delta') {
+          answerText += data.text;
+          body.innerHTML = renderAnswer(answerText) + '<span class="cursor"></span>';
+          scrollDown();
+        } else if (ev === 'done') {
+          refused = data.refused; cited = data.cited || [];
+        } else if (ev === 'error') {
+          body.innerHTML = '<span class="skel">ошибка: ' + esc(data.message) + '</span>';
+        }
+      }
+    }
+
+    body.innerHTML = renderAnswer(answerText || '(пустой ответ)');
+
+    if (refused) {
+      const r = el('div', 'refusal');
+      r.innerHTML = '<div class="icon">⌖</div><div><b>Вне базы знаний</b><span>ответа нет в документации FastAPI — бот не выдумывает</span></div>';
+      bubble.appendChild(r);
+    } else {
+      const citedSet = new Set(cited.length ? cited : sources.map(s => s.n));
+      renderSources(bubble, sources, citedSet);
+    }
+    const lat = retrievalLatency != null ? `retrieval ${retrievalLatency.toFixed(2)} с` : '';
+    const gen = ' · генерация завершена';
+    const meta = el('div', 'meta', lat + gen);
+    bubble.appendChild(meta);
+    statusEl.innerHTML = '';
+  } catch (e) {
+    body.innerHTML = '<span class="skel">Не удалось получить ответ: ' + esc(e.message) + '</span>';
+    statusEl.innerHTML = '';
+  } finally {
+    busy = false; sendBtn.disabled = false; input.focus();
+    scrollDown();
+  }
+}
+
+sendBtn.addEventListener('click', () => { const v = input.value; input.value = ''; ask(v); });
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { const v = input.value; input.value = ''; ask(v); }
+});
+document.querySelectorAll('.chip').forEach(c =>
+  c.addEventListener('click', () => ask(c.textContent))
+);
+</script>
+</body>
+</html>
