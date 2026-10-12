@@ -19,8 +19,12 @@ LINKS_FILE = Path("data/links.txt")
 DOCS_DIR = Path("data/docs")
 
 
-def parse_links(path: Path = LINKS_FILE) -> list[tuple[str, str]]:
-    """[(raw_url, doc_url, имя_файла)] из links.txt."""
+def parse_links(path: Path = LINKS_FILE) -> list[tuple[str, str, str]]:
+    """[(raw_url, doc_url, имя_файла)] из links.txt.
+
+    Имя файла — путь внутри docs с «/» → «__», чтобы одноимённые index.md
+    из разных папок не затирали друг друга.
+    """
     out = []
     for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -29,8 +33,12 @@ def parse_links(path: Path = LINKS_FILE) -> list[tuple[str, str]]:
         parts = line.split()
         raw_url = parts[0]
         doc_url = parts[1] if len(parts) > 1 else raw_url
-        name = raw_url.rsplit("/", 1)[-1]
-        out.append((raw_url, doc_url, name))
+        marker = "/docs/en/docs/"
+        if marker in raw_url:
+            inner = raw_url.split(marker, 1)[1]
+        else:
+            inner = raw_url.rsplit("/", 1)[-1]
+        out.append((raw_url, doc_url, inner.replace("/", "__")))
     return out
 
 

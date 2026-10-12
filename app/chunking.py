@@ -8,6 +8,12 @@ from dataclasses import dataclass
 from app.config import estimate_tokens
 
 _HEADING_RE = re.compile(r"^(#{1,4})\s+(.*)$")
+# FastAPI docs добавляют к заголовкам явные якоря: "## Title { #anchor }"
+_ANCHOR_RE = re.compile(r"\s*\{\s*#[^}]*\}\s*$")
+
+
+def _clean_heading(title: str) -> str:
+    return _ANCHOR_RE.sub("", title).strip()
 
 
 @dataclass
@@ -40,7 +46,8 @@ def split_markdown(text: str) -> list[tuple[list[str], str]]:
     for line in text.splitlines():
         m = _HEADING_RE.match(line)
         if m:
-            raw.append(_RawSection(level=len(m.group(1)), title=m.group(2).strip(), lines=[line]))
+            level, title_txt = len(m.group(1)), _clean_heading(m.group(2))
+            raw.append(_RawSection(level=level, title=title_txt, lines=[f"{'#' * level} {title_txt}"]))
         else:
             raw[-1].lines.append(line)
 
@@ -118,7 +125,10 @@ def chunk_markdown(
 
     chunks: list[Chunk] = []
     for heading_path, sec_text in split_markdown(text):
-        section_label = " > ".join(heading_path) if heading_path else doc_title
+        path = heading_path
+        if path and path[0] == doc_title:  # H1 совпадает с заголовком документа — не дублируем
+            path = path[1:]
+        section_label = " > ".join(path) if path else doc_title
         for piece in _split_long(sec_text, target_tokens, max_tokens, overlap_tokens):
             piece = piece.strip()
             if not piece or estimate_tokens(piece) < 15:
@@ -127,7 +137,7 @@ def chunk_markdown(
                 Chunk(
                     source_file=source_file,
                     title=doc_title,
-                    section=f"{doc_title} > {section_label}" if heading_path else doc_title,
+                    section=section_label,
                     url=url,
                     content=piece,
                     token_count=estimate_tokens(piece),

@@ -103,6 +103,11 @@ class LLMService:
         log.info("embeddings provider: %s (%s)", self._embed_provider.name, self._embed_provider.embedding_model)
         return self._embed_provider
 
+    def _fallback(self, p: _Provider) -> _Provider | None:
+        """Другой провайдер, если он доступен."""
+        other = self._or if p is self._glm else self._glm
+        return other if other.available() else None
+
     def _probe_chat(self, p: _Provider) -> bool:
         try:
             with httpx.Client(timeout=CHAT_TIMEOUT) as c:
@@ -128,7 +133,18 @@ class LLMService:
     # ---------- эмбеддинги ----------
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        p = self.embed_endpoint()
+        try:
+            return self._embed_with(self.embed_endpoint(), texts)
+        except LLMError:
+            # жёсткая ошибка провайдера (модели нет / нет баланса) — откат на резерв
+            fb = self._fallback(self.embed_endpoint())
+            if fb is None:
+                raise
+            log.warning("эмбеддинги: %s недоступен, откат на %s", self.embed_endpoint().name, fb.name)
+            self._embed_provider = fb
+            return self._embed_with(fb, texts)
+
+    def _embed_with(self, p: _Provider, texts: list[str]) -> list[list[float]]:
         out: list[list[float]] = []
         # батчами по 32
         for i in range(0, len(texts), 32):
@@ -150,7 +166,17 @@ class LLMService:
     # ---------- генерация ----------
 
     def chat(self, messages: list[dict[str, str]], max_tokens: int = 1024, temperature: float = 0.2) -> str:
-        p = self.chat_endpoint()
+        try:
+            return self._chat_with(self.chat_endpoint(), messages, max_tokens, temperature)
+        except LLMError:
+            fb = self._fallback(self.chat_endpoint())
+            if fb is None:
+                raise
+            log.warning("чат: %s недоступен, откат на %s", self.chat_endpoint().name, fb.name)
+            self._chat_provider = fb
+            return self._chat_with(fb, messages, max_tokens, temperature)
+
+    def _chat_with(self, p: _Provider, messages: list[dict[str, str]], max_tokens: int, temperature: float) -> str:
         with httpx.Client(timeout=CHAT_TIMEOUT) as c:
             r = c.post(
                 f"{p.base_url}/chat/completions", headers=p._headers(),
