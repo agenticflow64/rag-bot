@@ -1,0 +1,22 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,DejaVu Sans,42,&H00FFFFFF,&H000000FF,&H00000000,&H8C000000,0,0,0,0,100,100,0,0,4,1,0,2,80,80,48,204
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.50,0:00:04.50,Default,,0,0,0,,RAG-ассистент поддержки по базе знаний компании
+Dialogue: 0,0:00:05.00,0:00:10.00,Default,,0,0,0,,Живой вопрос оператора: оптовый заказ на 20 смартфонов
+Dialogue: 0,0:00:14.50,0:00:19.50,Default,,0,0,0,,Ответ по базе знаний — с цитатами и источниками
+Dialogue: 0,0:00:20.00,0:00:25.00,Default,,0,0,0,,Ассистент видит, каких данных не хватает для решения
+Dialogue: 0,0:00:36.00,0:00:41.00,Default,,0,0,0,,Источник открывается одним кликом — оригинал документа
+Dialogue: 0,0:00:42.00,0:00:46.50,Default,,0,0,0,,Проверка ответа — без догадок
+Dialogue: 0,0:00:48.00,0:00:53.00,Default,,0,0,0,,Уточнил данные — точный расчёт по правилам базы
+Dialogue: 0,0:00:54.50,0:00:58.50,Default,,0,0,0,,Ответы только по вашей документации, со ссылками
+Dialogue: 0,0:00:58.70,0:00:61.70,Default,,0,0,0,,Кейс: agenticflow64.github.io
